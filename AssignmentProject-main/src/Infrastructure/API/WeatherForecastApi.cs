@@ -6,7 +6,7 @@ public class WeatherForecastApi : IWeatherForecastApi
     public async Task<int> GetTemperature(string cityName, DateTime time)
     {
         // Simulate a delay
-        // await Task.Delay(5000);
+        await Task.Delay(3000);
         return await Task.FromResult(new Random().Next(-10, 35));
     }
 }
