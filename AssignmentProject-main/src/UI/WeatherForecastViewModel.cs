@@ -1,13 +1,8 @@
 ﻿using Assignment.Application.Common.Interfaces;
 using Assignment.Application.Countries.Queries;
-using Assignment.Application.TodoLists.Queries.GetTodos;
-using Assignment.Domain.Entities;
 using Assignment.UI.Cache;
 using Caliburn.Micro;
 using MediatR;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Assignment.UI
 {

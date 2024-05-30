@@ -48,6 +48,16 @@ The following features need to be implemented:
 
 - **Project Improvement Ideas**:
   - Please provide your suggestions for improving this project at the end of this file. Consider enhancements in functionality, performance, user experience, code quality, or any other areas you deem necessary.
+ 
+ **Suggestions for Improving the Project and Ideas**:
+  - Use StackPanel instead of Grid to make UI a bit simple / faster for renderring
+  - Add Tests for the Weather Forecast feature
+  - Add usage of ObservableCollection to update the UI when the data changes
+  - Avoid using async void methods, use async Task instead. This will allow to catch exceptions and handle them properly(Tried using it with NotifyTaskCompletion suggested by Microsoft)
+  - Find a way to expicitly set a timer for todo list or items for caches
+  - Add a way to delete a todo list or item
+  - Clean up the weather Forecast view if city or country is changed 
+    
 
 ## Guidelines
 - Make sure your GitHub repository is public so that we can review your code.
