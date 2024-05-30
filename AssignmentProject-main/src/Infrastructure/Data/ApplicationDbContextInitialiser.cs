@@ -81,7 +81,7 @@ public class ApplicationDbContextInitialiser
             await _userManager.CreateAsync(administrator, "Administrator1!");
             if (!string.IsNullOrWhiteSpace(administratorRole.Name))
             {
-                await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
+                await _userManager.AddToRolesAsync(administrator, new[] { administratorRole.Name });
             }
         }
 
@@ -103,5 +103,65 @@ public class ApplicationDbContextInitialiser
 
             await _context.SaveChangesAsync();
         }
+
+        //Default cities and countries
+        if (!_context.Countries.Any())
+        {
+            _context.Countries.Add(new Country
+            {
+                Name = "Kyrgyzstan",
+                Cities =
+                {
+                    new City { Name = "Bishkek" },
+                    new City { Name = "Osh" },
+                    new City { Name = "Naryn" }
+                }
+            });
+
+            _context.Countries.Add(new Country
+            {
+                Name = "USA",
+                Cities =
+                {
+                    new City { Name = "Texas" },
+                    new City { Name = "Washington D.C" },
+                    new City { Name = "New York" },
+                }
+            });
+
+            _context.Countries.Add(new Country
+            {
+                Name = "Australia",
+                Cities =
+                {
+                    new City { Name = "Sydney" },
+                    new City { Name = "Canberra" },
+                }
+            });
+
+            _context.Countries.Add(new Country
+            {
+                Name = "UK",
+                Cities =
+                {
+                    new City { Name = "London" },
+                    new City { Name = "Manchester" },
+                }
+            });
+
+
+            _context.Countries.Add(new Country
+            {
+                Name = "Spain",
+                Cities =
+                {
+                    new City { Name = "Madrid" },
+                    new City { Name = "Barcelona" },
+                }
+            });
+
+            await _context.SaveChangesAsync();
+        }
+
     }
 }
