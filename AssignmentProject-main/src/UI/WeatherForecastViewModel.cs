@@ -2,6 +2,7 @@
 using Assignment.Application.Countries.Queries;
 using Assignment.Application.TodoLists.Queries.GetTodos;
 using Assignment.Domain.Entities;
+using Assignment.UI.Cache;
 using Caliburn.Micro;
 using MediatR;
 using System.Collections.Generic;
@@ -14,10 +15,7 @@ namespace Assignment.UI
     {
         private readonly IWeatherForecastApi _weatherApi;
         private readonly ISender _sender;
-        //Simple placeholder for now
-        //Using cache for weather is good practice to avoid unnecessary calls
-        private readonly ISimpleCache<int> _citiesTemperatureCache = null;
-
+        private readonly ISimpleCache<int> _citiesTemperatureCache;
 
         private NotifyTaskCompletion<IList<CountryDto>> _countries;
         public NotifyTaskCompletion<IList<CountryDto>> Countries
@@ -81,6 +79,7 @@ namespace Assignment.UI
         {
             _weatherApi = weatherService;
             _sender = sender;
+            _citiesTemperatureCache = new SimpleCache<int>(TimeSpan.FromMinutes(1));
             RefreshCountries();
         }
 
