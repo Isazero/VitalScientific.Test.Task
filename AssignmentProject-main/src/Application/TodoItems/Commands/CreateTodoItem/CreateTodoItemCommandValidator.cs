@@ -9,16 +9,15 @@ public class CreateTodoItemCommandValidator : AbstractValidator<CreateTodoItemCo
 
     public CreateTodoItemCommandValidator(IApplicationDbContext context)
     {
+        _context = context;
         RuleFor(v => v.Title)
             .MaximumLength(200)
             .NotEmpty();
 
         RuleFor(v => new BriefTodoItem(v.ListId, v.Title))
             .MustAsync(BeUniqueTitle)
-                .WithMessage("'{PropertyName}' must be unique.")
+                .WithMessage("Item 'Title' in list must be unique.")
                 .WithErrorCode("Unique");
-
-        _context = context;
     }
 
     private async Task<bool> BeUniqueTitle(BriefTodoItem todoItem, CancellationToken cancellationToken)

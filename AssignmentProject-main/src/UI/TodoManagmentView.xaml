@@ -14,7 +14,7 @@
         </Grid.ColumnDefinitions>
         <!-- Todo List Panel -->
         <StackPanel Grid.Column="0">
-            <ListBox ItemsSource="{Binding TodoLists}"
+            <ListBox ItemsSource="{Binding TodoLists.Result}"
                  DisplayMemberPath="Title"
                  SelectedItem="{Binding SelectedTodoList}" Height="350"/>
             <Button Content="Add Todo List" Command="{Binding AddTodoListCommand}" Margin="5"/>
@@ -40,7 +40,8 @@
                 </ListView.View>
             </ListView>
             <Button Content="Add Item" Command="{Binding DataContext.AddTodoItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" Grid.Row="1" Grid.Column="1" Margin="5"/>
-            <Button Content="Done" Command="{Binding DataContext.DoneTodoItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" Grid.Row="1" Grid.Column="2" Margin="5"/>
+            <Button Content="Done" Command="{Binding DataContext.DoneTodoItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                     Grid.Row="1" Grid.Column="2" Margin="5"/>
         </Grid>
     </Grid>
 </UserControl>

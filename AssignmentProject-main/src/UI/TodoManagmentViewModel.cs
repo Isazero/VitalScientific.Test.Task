@@ -1,97 +1,161 @@
-﻿using System.Windows.Input;
+﻿using System.Text;
+using System.Windows.Input;
+using Assignment.Application.Common.Exceptions;
 using Assignment.Application.TodoItems.Commands.DoneTodoItem;
 using Assignment.Application.TodoLists.Queries.GetTodos;
 using Caliburn.Micro;
 using MediatR;
 
-namespace Assignment.UI;
-internal class TodoManagmentViewModel : Screen
+namespace Assignment.UI
 {
-    private readonly ISender _sender;
-    private readonly IWindowManager _windowManager;
-
-    private IList<TodoListDto> todoLists;
-    public IList<TodoListDto> TodoLists
+    internal class TodoManagmentViewModel : Screen
     {
-        get
+        private readonly ISender _sender;
+        private readonly IWindowManager _windowManager;
+
+        //ObservableCollection is better than IList
+        private NotifyTaskCompletion<IList<TodoListDto>> _todoLists;
+        public NotifyTaskCompletion<IList<TodoListDto>> TodoLists
         {
-            return todoLists;
+            get => _todoLists;
+            set
+            {
+                _todoLists = value;
+                NotifyOfPropertyChange(() => TodoLists);
+            }
         }
-        set
+
+        private TodoListDto _selectedTodoList;
+        public TodoListDto SelectedTodoList
         {
-            todoLists = value;
-            NotifyOfPropertyChange(() => TodoLists);
+            get => _selectedTodoList;
+            set
+            {
+                _selectedTodoList = value;
+                NotifyOfPropertyChange(() => SelectedTodoList);
+            }
         }
-    }
 
-    private TodoListDto _selectedTodoList;
-    public TodoListDto SelectedTodoList
-    {
-        get => _selectedTodoList;
-        set
+        public IEnumerable<TodoItemDto> SelectedTodoListItems => SelectedTodoList?.Items;
+
+        private TodoItemDto _selectedItem;
+        public TodoItemDto SelectedItem
         {
-            _selectedTodoList = value;
-            NotifyOfPropertyChange(() => SelectedTodoList);
+            get => _selectedItem;
+            set
+            {
+                _selectedItem = value;
+            }
         }
-    }
 
-    private TodoItemDto _selectedItem;
-    public TodoItemDto SelectedItem
-    {
-        get => _selectedItem;
-        set
+        public ICommand AddTodoListCommand { get; private set; }
+        public ICommand AddTodoItemCommand { get; private set; }
+        public ICommand DoneTodoItemCommand { get; private set; }
+
+        public TodoManagmentViewModel(ISender sender, IWindowManager windowManager)
         {
-            _selectedItem = value;
-            NotifyOfPropertyChange(() => SelectedItem);
+            _sender = sender;
+            _windowManager = windowManager;
+
+            AddTodoListCommand = new RelayCommand(AddTodoList);
+            AddTodoItemCommand = new RelayCommand(AddTodoItem, CanExecuteAddTodoItem);
+            DoneTodoItemCommand = new RelayCommand(DoneTodoItem, CanExecuteDoneTodoItem);
+            RefreshTodoLists();
+   
         }
-    }
 
-    public ICommand AddTodoListCommand { get; private set; }
-    public ICommand AddTodoItemCommand { get; private set; }
-    public ICommand DoneTodoItemCommand { get; private set; }
 
-    public TodoManagmentViewModel(ISender sender, IWindowManager windowManager)
-    {
-        _sender = sender;
-        _windowManager = windowManager;
-        Initialize();
-    }
-
-    private async void Initialize()
-    {
-        await RefereshTodoLists();
-
-        AddTodoListCommand = new RelayCommand(AddTodoList);
-        AddTodoItemCommand = new RelayCommand(AddTodoItem);
-        DoneTodoItemCommand = new RelayCommand(DoneTodoItem);
-    }
-
-    private async Task RefereshTodoLists()
-    {
-        var selectedListId = SelectedTodoList?.Id;
-
-        TodoLists = await _sender.Send(new GetTodosQuery());
-
-        if (selectedListId.HasValue && selectedListId.Value > 0)
+        private void RefreshTodoLists()
         {
-            SelectedTodoList = TodoLists.FirstOrDefault(list => list.Id == selectedListId.Value);
+            var selectedListId = SelectedTodoList?.Id;
+            TodoLists = new NotifyTaskCompletion<IList<TodoListDto>>(_sender.Send(new GetTodosQuery()));
+            if (selectedListId.HasValue && selectedListId.Value > 0)
+            {
+                var selectedList = TodoLists.Result.FirstOrDefault(list => list.Id == selectedListId.Value);
+                SelectedTodoList = selectedList;
+            }
         }
-    }
 
-    private async void AddTodoList(object obj)
-    {
-        var todoList = new TodoListViewModel(_sender);
-        await _windowManager.ShowDialogAsync(todoList);
-    }
+        private async void AddTodoList(object obj)
+        {
+            var todoList = new TodoListViewModel(_sender);
+            try
+            {
+                var result = await _windowManager.ShowDialogAsync(todoList);
+                if (result == true)
+                {
+                    RefreshTodoLists();
+                }
+            }
+            catch (ValidationException ex)
+            {
+                var stringBuilder = new StringBuilder();
+                foreach (var error in ex.Errors)
+                {
+                    stringBuilder.AppendLine($"{error.Key}: {string.Join(", ", error.Value)}");
+                }
+                ShowError(stringBuilder.ToString());
+            }
+        }
 
-    private async void AddTodoItem(object obj)
-    {
-        var todoItem = new TodoItemViewModel(_sender, SelectedTodoList.Id);
-        await _windowManager.ShowDialogAsync(todoItem);
-    }
+        private async void AddTodoItem(object obj)
+        {
+            var todoItem = new TodoItemViewModel(_sender, SelectedTodoList.Id);
+            try
+            {
+                var result = await _windowManager.ShowDialogAsync(todoItem);
+                if (result is true)
+                {
+                    RefreshTodoLists();
+                }
+            }
+            catch (ValidationException ex)
+            {
+                var stringBuilder = new StringBuilder();
+                foreach (var error in ex.Errors)
+                {
+                    stringBuilder.AppendLine($"{error.Key}: {string.Join(", ", error.Value)}");
+                }
+                ShowError(stringBuilder.ToString());
+            }
+        }
 
-    private async void DoneTodoItem(object obj)
-    {
-        await _sender.Send(new DoneTodoItemCommand(SelectedItem.Id));
+        private async void DoneTodoItem(object obj)
+        {
+            if (SelectedItem is null)
+            {
+                return;
+            }
+
+            await _sender.Send(new DoneTodoItemCommand(SelectedItem.Id));
+            RefreshTodoLists();
+        }
+
+        private bool CanExecuteDoneTodoItem(object obj)
+        {
+            return SelectedItem != null && !SelectedItem.Done;
+        }
+
+        private bool CanExecuteAddTodoItem(object obj)
+        {
+            return SelectedTodoList != null;
+        }
+
+        public void ShowError(string errorMessage)
+        {
+            var viewModel = new ValidationErrorViewModel
+            {
+                ErrorMessage = errorMessage
+            };
+
+            var view = new ValidationErrorView
+            {
+                DataContext = viewModel
+            };
+
+            view.ShowDialog();
+        }
+
+
     }
 }
