@@ -1,17 +1,21 @@
 ﻿using System.Text;
 using System.Windows.Input;
 using Assignment.Application.Common.Exceptions;
+using Assignment.Application.Common.Interfaces;
 using Assignment.Application.TodoItems.Commands.DoneTodoItem;
 using Assignment.Application.TodoLists.Queries.GetTodos;
+using Assignment.UI.Cache;
 using Caliburn.Micro;
 using MediatR;
 
 namespace Assignment.UI
 {
+    //TODO: Find way to remove async void for comand 
     internal class TodoManagmentViewModel : Screen
     {
         private readonly ISender _sender;
         private readonly IWindowManager _windowManager;
+        private readonly ISimpleCache<TodoListDto> _todoListCache;
 
         //ObservableCollection is better than IList
         private NotifyTaskCompletion<IList<TodoListDto>> _todoLists;
@@ -56,14 +60,17 @@ namespace Assignment.UI
         {
             _sender = sender;
             _windowManager = windowManager;
+            _todoListCache = new SimpleCache<TodoListDto>(TimeSpan.FromMinutes(10));
 
             AddTodoListCommand = new RelayCommand(AddTodoList);
             AddTodoItemCommand = new RelayCommand(AddTodoItem, CanExecuteAddTodoItem);
             DoneTodoItemCommand = new RelayCommand(DoneTodoItem, CanExecuteDoneTodoItem);
             RefreshTodoLists();
-   
+            foreach (var todoList in TodoLists.Result)
+            {
+                _todoListCache.Set(todoList.Id.ToString(), todoList);
+            }
         }
-
 
         private void RefreshTodoLists()
         {
@@ -84,17 +91,15 @@ namespace Assignment.UI
                 var result = await _windowManager.ShowDialogAsync(todoList);
                 if (result == true)
                 {
+                    //var newList = todoList.GetTodoList();
+                    //_todoListCache.Set(newList.Id.ToString(), newList);
+
                     RefreshTodoLists();
                 }
             }
             catch (ValidationException ex)
             {
-                var stringBuilder = new StringBuilder();
-                foreach (var error in ex.Errors)
-                {
-                    stringBuilder.AppendLine($"{error.Key}: {string.Join(", ", error.Value)}");
-                }
-                ShowError(stringBuilder.ToString());
+                ShowError(FormatErrors(ex));
             }
         }
 
@@ -106,17 +111,19 @@ namespace Assignment.UI
                 var result = await _windowManager.ShowDialogAsync(todoItem);
                 if (result is true)
                 {
+                    //var updatedList = await _todoListCache.Get(SelectedTodoList.Id.ToString());
+                    //if (updatedList != null)
+                    //{
+                    //    updatedList.Items.Add(todoItem.GetTodoItem());
+                    //    _todoListCache.Set(updatedList.Id.ToString(), updatedList);
+                    //}
+
                     RefreshTodoLists();
                 }
             }
             catch (ValidationException ex)
             {
-                var stringBuilder = new StringBuilder();
-                foreach (var error in ex.Errors)
-                {
-                    stringBuilder.AppendLine($"{error.Key}: {string.Join(", ", error.Value)}");
-                }
-                ShowError(stringBuilder.ToString());
+                ShowError(FormatErrors(ex));
             }
         }
 
@@ -156,6 +163,15 @@ namespace Assignment.UI
             view.ShowDialog();
         }
 
+        private static string FormatErrors(ValidationException ex)
+        {
+            var stringBuilder = new StringBuilder();
+            foreach (var error in ex.Errors)
+            {
+                stringBuilder.AppendLine($"{error.Key}: {string.Join(", ", error.Value)}");
+            }
+            return stringBuilder.ToString();
+        }
 
     }
 }
